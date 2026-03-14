@@ -1362,8 +1362,8 @@ class ProjectFilterScreen(ModalScreen):
 
     BINDINGS = [
         Binding("escape", "close_filter", "Close"),
-        Binding("a", "select_all", "All"),
-        Binding("n", "deselect_all", "None"),
+        Binding("ctrl+a", "select_all", "All", priority=True),
+        Binding("ctrl+n", "deselect_all", "None", priority=True),
     ]
 
     def __init__(self, config: dict) -> None:
@@ -1375,9 +1375,10 @@ class ProjectFilterScreen(ModalScreen):
             yield Label("PROJECTS", id="filter-title")
             yield Input(placeholder="Search…", id="filter-search")
             yield Vertical(id="filter-rows")
-            yield Static("a all · n none · esc close", id="filter-hint")
+            yield Static("ctrl+a all · ctrl+n none · esc close", id="filter-hint")
 
     def on_mount(self) -> None:
+        self.query_one("#filter-search", Input).focus()
         self._discover()
 
     @work(thread=True)

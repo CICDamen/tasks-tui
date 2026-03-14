@@ -860,7 +860,7 @@ async def test_filter_screen_reflects_visible_state():
 
 @pytest.mark.asyncio
 async def test_filter_screen_select_all():
-    """'a' action sets all visible toggles to True."""
+    """ctrl+a action sets all visible toggles to True."""
     from tasks_tui.app import ProjectFilterRow
     with (
         patch("tasks_tui.app.list_tasks", return_value=[]),
@@ -878,7 +878,7 @@ async def test_filter_screen_select_all():
 
 @pytest.mark.asyncio
 async def test_filter_screen_deselect_all():
-    """'n' action sets all visible toggles to False."""
+    """ctrl+n action sets all visible toggles to False."""
     from tasks_tui.app import ProjectFilterRow
     with (
         patch("tasks_tui.app.list_tasks", return_value=[]),
@@ -892,6 +892,56 @@ async def test_filter_screen_deselect_all():
             screen.action_deselect_all()
             await pilot.pause()
             assert not any(r.is_visible for r in screen.query(ProjectFilterRow))
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_search_filters_rows():
+    """Typing in the search box hides rows that don't match."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            # Type "alp" — only "alpha" should be visible
+            await pilot.press("a", "l", "p")
+            await pilot.pause()
+            rows = list(screen.query(ProjectFilterRow))
+            visible = [r for r in rows if r.display]
+            hidden = [r for r in rows if not r.display]
+            assert len(visible) == 1 and visible[0].project_name == "alpha"
+            assert len(hidden) == 1 and hidden[0].project_name == "beta"
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_ctrl_a_n_keybindings():
+    """ctrl+a / ctrl+n keybindings toggle all rows without disturbing the search input."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            # ctrl+a selects all
+            await pilot.press("ctrl+a")
+            await pilot.pause()
+            assert all(r.is_visible for r in screen.query(ProjectFilterRow))
+            # ctrl+n deselects all
+            await pilot.press("ctrl+n")
+            await pilot.pause()
+            assert not any(r.is_visible for r in screen.query(ProjectFilterRow))
+            # search input should be empty — keystrokes were not typed as text
+            from textual.widgets import Input as TInput
+            search_input = screen.query_one("#filter-search", TInput)
+            assert search_input.value == ""
 
 
 @pytest.mark.asyncio
