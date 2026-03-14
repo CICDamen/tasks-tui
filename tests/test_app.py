@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tasks_tui.app import GTasksApp, SetupScreen, _parse_date_input
+from tasks_tui.app import GTasksApp, ProjectFilterScreen, SetupScreen, _parse_date_input
 from tasks_tui.beads_api import BeadsIssue
 from tasks_tui.tasks_api import Task
 
@@ -794,3 +794,126 @@ async def test_setup_screen_save_before_discovery_preserves_existing_projects():
         "visible": True,
         "label": "my-label",
     }
+
+
+# ---------------------------------------------------------------------------
+# ProjectFilterScreen — project filter panel
+# ---------------------------------------------------------------------------
+
+_WORKSPACES = {
+    "/fake/alpha": "/fake/alpha/.beads/beads.db",
+    "/fake/beta": "/fake/beta/.beads/beads.db",
+}
+
+_FILTER_CONFIG = {
+    "sync": {"enabled": False, "auto_sync_on_start": False},
+    "sources": {"google_tasks": False, "beads": True, "beads_search_root": "~/Code"},
+    "projects": {
+        "alpha": {"sync": True, "visible": True, "label": "alpha"},
+        "beta": {"sync": True, "visible": False, "label": "beta"},
+    },
+}
+
+
+def _push_filter_screen(app, config=None):
+    """Push a ProjectFilterScreen onto the app and return it."""
+    screen = ProjectFilterScreen(config=config or _FILTER_CONFIG)
+    app.push_screen(screen)
+    return screen
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_populates_rows():
+    """ProjectFilterScreen populates one row per discovered workspace."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            rows = list(screen.query(ProjectFilterRow))
+            names = {r.project_name for r in rows}
+            assert names == {"alpha", "beta"}
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_reflects_visible_state():
+    """Rows reflect the visible flag from config."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            states = {r.project_name: r.is_visible for r in screen.query(ProjectFilterRow)}
+            assert states["alpha"] is True
+            assert states["beta"] is False
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_select_all():
+    """'a' action sets all visible toggles to True."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            screen.action_select_all()
+            await pilot.pause()
+            assert all(r.is_visible for r in screen.query(ProjectFilterRow))
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_deselect_all():
+    """'n' action sets all visible toggles to False."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = _push_filter_screen(pilot.app)
+            await pilot.pause()
+            screen.action_deselect_all()
+            await pilot.pause()
+            assert not any(r.is_visible for r in screen.query(ProjectFilterRow))
+
+
+@pytest.mark.asyncio
+async def test_filter_screen_dismiss_returns_projects():
+    """Closing the filter panel returns updated projects dict."""
+    from tasks_tui.app import ProjectFilterRow
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch("tasks_tui.app.list_beads_issues", return_value=[]),
+        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            result = {}
+            def capture(projects):
+                if projects is not None:
+                    result["projects"] = projects
+            screen = ProjectFilterScreen(config=_FILTER_CONFIG)
+            await pilot.app.push_screen(screen, capture)
+            await pilot.pause()
+            screen.action_close_filter()
+            await pilot.pause()
+            assert "projects" in result
+            assert "alpha" in result["projects"]
+            assert "beta" in result["projects"]

@@ -913,6 +913,50 @@ class GTasksApp(App):
         color: $text-muted;
         margin: 1 0;
     }
+
+    /* Project filter panel */
+    #filter-dialog {
+        background: $panel;
+        border: round $primary;
+        padding: 1 2;
+        width: 44;
+        height: auto;
+        max-height: 70vh;
+        align: center middle;
+    }
+
+    #filter-title {
+        text-style: bold;
+        color: $accent;
+        margin-bottom: 1;
+    }
+
+    #filter-search {
+        margin-bottom: 1;
+    }
+
+    #filter-rows {
+        height: auto;
+        max-height: 20;
+        overflow-y: auto;
+    }
+
+    .filter-row {
+        height: auto;
+        padding-bottom: 1;
+        align: left middle;
+    }
+
+    .filter-name {
+        width: 1fr;
+        color: $text;
+    }
+
+    #filter-hint {
+        color: $text-muted;
+        text-align: center;
+        margin-top: 1;
+    }
     """
 
     BINDINGS = [
@@ -926,6 +970,7 @@ class GTasksApp(App):
         Binding("d", "delete_task", "Delete"),
         Binding("r", "refresh", "Refresh", show=False),
         Binding("ctrl+s", "sync", "Sync"),
+        Binding("f", "filter_projects", "Filter"),
         Binding("p", "config", "Prefs"),
     ]
 
@@ -1271,6 +1316,15 @@ class GTasksApp(App):
         except Exception as e:
             self.notify(f"Failed: {e}", severity="error")
 
+    def action_filter_projects(self) -> None:
+        def on_result(projects: dict | None) -> None:
+            if projects is not None:
+                self._config.setdefault("projects", {}).update(projects)
+                save_config(self._config)
+                self._load_tasks()
+
+        self.push_screen(ProjectFilterScreen(config=self._config), on_result)
+
     def action_config(self) -> None:
         def on_result(config: dict | None) -> None:
             if config is not None:
@@ -1280,6 +1334,83 @@ class GTasksApp(App):
                 self.notify("Configuration saved")
 
         self.push_screen(SetupScreen(config=self._config), on_result)
+
+
+class ProjectFilterRow(Widget):
+    """One row in the project filter panel: project name + visible toggle."""
+
+    def __init__(self, name: str, visible: bool) -> None:
+        super().__init__(classes="filter-row")
+        self._name = name
+        self._visible = visible
+
+    def compose(self) -> ComposeResult:
+        yield Static(self._name, classes="filter-name")
+        yield Switch(value=self._visible, classes="filter-switch")
+
+    @property
+    def project_name(self) -> str:
+        return self._name
+
+    @property
+    def is_visible(self) -> bool:
+        return self.query_one(Switch).value
+
+
+class ProjectFilterScreen(ModalScreen):
+    """Quick project visibility filter — toggle which beads projects appear in the task view."""
+
+    BINDINGS = [
+        Binding("escape", "close_filter", "Close"),
+        Binding("a", "select_all", "All"),
+        Binding("n", "deselect_all", "None"),
+    ]
+
+    def __init__(self, config: dict) -> None:
+        super().__init__()
+        self._config = config
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="filter-dialog"):
+            yield Label("PROJECTS", id="filter-title")
+            yield Input(placeholder="Search…", id="filter-search")
+            yield Vertical(id="filter-rows")
+            yield Static("a all · n none · esc close", id="filter-hint")
+
+    def on_mount(self) -> None:
+        self._discover()
+
+    @work(thread=True)
+    def _discover(self) -> None:
+        workspaces = discover_beads_workspaces()
+        self.app.call_from_thread(self._populate, workspaces)
+
+    def _populate(self, workspaces: dict[str, str]) -> None:
+        rows = self.query_one("#filter-rows", Vertical)
+        for workspace_path in sorted(workspaces):
+            name = Path(workspace_path).name
+            proj = get_project_config(name, self._config)
+            rows.mount(ProjectFilterRow(name=name, visible=proj["visible"]))
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        query = event.value.lower()
+        for row in self.query(ProjectFilterRow):
+            row.display = not query or query in row.project_name.lower()
+
+    def action_select_all(self) -> None:
+        for row in self.query(ProjectFilterRow):
+            row.query_one(Switch).value = True
+
+    def action_deselect_all(self) -> None:
+        for row in self.query(ProjectFilterRow):
+            row.query_one(Switch).value = False
+
+    def action_close_filter(self) -> None:
+        projects: dict[str, dict] = dict(self._config.get("projects", {}))
+        for row in self.query(ProjectFilterRow):
+            proj = get_project_config(row.project_name, self._config)
+            projects[row.project_name] = {**proj, "visible": row.is_visible}
+        self.dismiss(projects)
 
 
 class ProjectRow(Widget):
