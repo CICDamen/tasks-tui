@@ -796,7 +796,6 @@ async def test_setup_screen_save_before_discovery_preserves_existing_projects():
     }
 
 
-# ---------------------------------------------------------------------------
 # ProjectFilterScreen — project filter panel
 # ---------------------------------------------------------------------------
 
@@ -967,3 +966,69 @@ async def test_filter_screen_dismiss_returns_projects():
             assert "projects" in result
             assert "alpha" in result["projects"]
             assert "beta" in result["projects"]
+
+
+# ---------------------------------------------------------------------------
+# SetupScreen — search root path validation
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_setup_screen_rejects_nonexistent_search_root(tmp_path):
+    """Save is blocked and a notification fires when beads is on and path doesn't exist."""
+    config = {
+        "sync": {"enabled": False, "auto_sync_on_start": False},
+        "sources": {"google_tasks": False, "beads": True, "beads_search_root": str(tmp_path / "no-such-dir")},
+        "projects": {},
+    }
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch.object(SetupScreen, "_discover_projects"),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = SetupScreen(config=config)
+            dismissed = {}
+
+            def capture(c):
+                if c is not None:
+                    dismissed["result"] = c
+
+            await pilot.app.push_screen(screen, capture)
+            await pilot.pause()
+            save_btn = pilot.app.screen.query_one("#setup-save")
+            pilot.app.screen.on_button_pressed(save_btn.Pressed(save_btn))
+            await pilot.pause()
+
+    # dismiss was not called — config not saved
+    assert "result" not in dismissed
+
+
+@pytest.mark.asyncio
+async def test_setup_screen_accepts_valid_search_root(tmp_path):
+    """Save proceeds when beads is on and search root path exists."""
+    config = {
+        "sync": {"enabled": False, "auto_sync_on_start": False},
+        "sources": {"google_tasks": False, "beads": True, "beads_search_root": str(tmp_path)},
+        "projects": {},
+    }
+    with (
+        patch("tasks_tui.app.list_tasks", return_value=[]),
+        patch("tasks_tui.app.list_completed_tasks", return_value=[]),
+        patch.object(SetupScreen, "_discover_projects"),
+    ):
+        async with GTasksApp().run_test() as pilot:
+            screen = SetupScreen(config=config)
+            dismissed = {}
+
+            def capture(c):
+                if c is not None:
+                    dismissed["result"] = c
+
+            await pilot.app.push_screen(screen, capture)
+            await pilot.pause()
+            save_btn = pilot.app.screen.query_one("#setup-save")
+            pilot.app.screen.on_button_pressed(save_btn.Pressed(save_btn))
+            await pilot.pause()
+
+    assert "result" in dismissed
