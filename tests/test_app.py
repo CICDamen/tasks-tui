@@ -829,7 +829,7 @@ async def test_filter_screen_populates_rows():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -847,7 +847,7 @@ async def test_filter_screen_reflects_visible_state():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -865,7 +865,7 @@ async def test_filter_screen_select_all():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -883,7 +883,7 @@ async def test_filter_screen_deselect_all():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -901,7 +901,7 @@ async def test_filter_screen_search_filters_rows():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -924,7 +924,7 @@ async def test_filter_screen_ctrl_a_n_keybindings():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             screen = _push_filter_screen(pilot.app)
@@ -951,7 +951,7 @@ async def test_filter_screen_dismiss_returns_projects():
         patch("tasks_tui.app.list_tasks", return_value=[]),
         patch("tasks_tui.app.list_completed_tasks", return_value=[]),
         patch("tasks_tui.app.list_beads_issues", return_value=[]),
-        patch("tasks_tui.app.discover_beads_workspaces", return_value=_WORKSPACES),
+        patch("tasks_tui.screens.discover_beads_workspaces", return_value=_WORKSPACES),
     ):
         async with GTasksApp().run_test() as pilot:
             result = {}
