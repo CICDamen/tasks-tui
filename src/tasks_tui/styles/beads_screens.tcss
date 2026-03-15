@@ -1,0 +1,11 @@
+/* Beads screens — BeadsEditScreen */
+
+.beads-meta-row {
+    height: 3;
+    margin-bottom: 1;
+}
+
+.beads-cycle-btn {
+    width: 1fr;
+    margin-right: 1;
+}

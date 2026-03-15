@@ -1,0 +1,96 @@
+/* Task screens — DatePickerScreen, NewTaskScreen, EditTaskScreen, TaskDetailScreen */
+
+#datepicker-dialog {
+    background: $panel;
+    border: round $primary;
+    padding: 1 2;
+    width: 36;
+    height: auto;
+    align: center middle;
+}
+
+#datepicker-month {
+    text-align: center;
+    color: $primary;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#datepicker-cal {
+    color: $text;
+    margin-bottom: 1;
+}
+
+#new-task-dialog {
+    background: $panel;
+    border: round $primary;
+    padding: 1 2;
+    width: 60;
+    height: auto;
+    align: center middle;
+}
+
+#detail-dialog {
+    background: $panel;
+    border: round $primary;
+    padding: 1 2;
+    width: 70;
+    height: 24;
+    align: center middle;
+}
+
+#dialog-title {
+    text-style: bold;
+    margin-bottom: 1;
+    color: $primary;
+}
+
+#dialog-hint {
+    color: $text-muted;
+    text-align: center;
+    margin-top: 1;
+}
+
+#detail-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+#detail-meta {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+#detail-divider {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+#detail-notes {
+    height: 1fr;
+    border: none;
+}
+
+#task-notes {
+    height: 6;
+    margin-bottom: 1;
+}
+
+Input {
+    margin-bottom: 1;
+}
+
+.due-row {
+    height: 3;
+    margin-bottom: 1;
+}
+
+.due-btn {
+    width: 1fr;
+}
+
+.clear-btn {
+    width: 5;
+    margin-left: 1;
+}

@@ -1,0 +1,122 @@
+/* Config screens — SetupScreen, ProjectFilterScreen */
+
+/* Setup / first-run screen */
+#setup-dialog {
+    background: $panel;
+    border: round $primary;
+    padding: 2 3;
+    width: 56;
+    height: auto;
+    max-height: 85vh;
+    overflow-y: auto;
+    align: center middle;
+}
+
+#setup-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+    text-align: center;
+}
+
+#setup-desc {
+    color: $text-muted;
+    margin-bottom: 1;
+    text-align: center;
+}
+
+.setup-section {
+    color: $accent;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.setup-row {
+    height: auto;
+    padding-bottom: 1;
+    align: left middle;
+}
+
+.setup-option-label {
+    width: 20;
+    color: $text;
+}
+
+.setup-spacer {
+    height: 1;
+}
+
+#setup-save {
+    width: 100%;
+    margin-top: 1;
+}
+
+#setup-hint {
+    color: $text-muted;
+    text-align: center;
+    margin-top: 1;
+}
+
+.project-row {
+    height: 3;
+    align: left middle;
+    margin-bottom: 0;
+}
+
+.project-name {
+    width: 14;
+    color: $text;
+}
+
+.project-label-input {
+    width: 1fr;
+}
+
+#projects-loading {
+    color: $text-muted;
+    margin: 1 0;
+}
+
+/* Project filter panel */
+#filter-dialog {
+    background: $panel;
+    border: round $primary;
+    padding: 1 2;
+    width: 44;
+    height: auto;
+    max-height: 70vh;
+    align: center middle;
+}
+
+#filter-title {
+    text-style: bold;
+    color: $accent;
+    margin-bottom: 1;
+}
+
+#filter-search {
+    margin-bottom: 1;
+}
+
+#filter-rows {
+    height: auto;
+    max-height: 20;
+    overflow-y: auto;
+}
+
+.filter-row {
+    height: auto;
+    padding-bottom: 1;
+    align: left middle;
+}
+
+.filter-name {
+    width: 1fr;
+    color: $text;
+}
+
+#filter-hint {
+    color: $text-muted;
+    text-align: center;
+    margin-top: 1;
+}

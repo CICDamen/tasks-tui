@@ -52,7 +52,13 @@ __all__ = [
 
 
 class GTasksApp(App):
-    CSS_PATH = "app.tcss"
+    CSS_PATH = [
+        "styles/base.tcss",
+        "styles/widgets.tcss",
+        "styles/task_screens.tcss",
+        "styles/beads_screens.tcss",
+        "styles/config_screens.tcss",
+    ]
 
     BINDINGS = [
         Binding("q", "quit", "Quit", show=False),

@@ -1,0 +1,44 @@
+/* Global app chrome — Screen, Header, ListView, SectionHeader, sync status bar */
+
+Screen {
+    background: $surface;
+}
+
+Header {
+    background: $primary;
+    color: $text;
+}
+
+ListView {
+    height: 1fr;
+    border: none;
+    padding: 0 1;
+    scrollbar-color: $primary 30%;
+    scrollbar-color-hover: $primary;
+}
+
+ListItem {
+    padding: 0;
+    height: 1;
+}
+
+ListItem:focus-within, ListItem.--highlight {
+    background: $primary 15%;
+}
+
+SectionHeader {
+    height: 1;
+    padding: 0;
+}
+
+SectionHeader:focus-within, SectionHeader.--highlight {
+    background: $boost;
+}
+
+.sync-status {
+    height: 1;
+    color: $text-muted;
+    text-align: right;
+    padding: 0 1;
+    background: $boost;
+}

@@ -1,0 +1,142 @@
+/* Task and Beads list-item widget styles */
+
+.task-row {
+    height: 1;
+    width: 100%;
+}
+
+.task-icon {
+    width: 3;
+    color: $text-muted;
+}
+
+.task-icon.pending {
+    color: $text-muted;
+}
+
+.task-icon.overdue {
+    color: $error;
+    text-style: bold;
+}
+
+.task-icon.completed {
+    color: $success;
+}
+
+.subtask-row {
+    padding-left: 2;
+}
+
+.subtask-prefix {
+    width: 2;
+    color: $text-muted;
+}
+
+.task-title {
+    width: 1fr;
+    color: $text;
+}
+
+.due-label {
+    width: 12;
+    text-align: right;
+    color: $text-muted;
+}
+
+.due-overdue {
+    width: 12;
+    text-align: right;
+    color: $error;
+    text-style: bold;
+}
+
+.due-urgent {
+    width: 12;
+    text-align: right;
+    color: $warning;
+}
+
+.due-soon {
+    width: 12;
+    text-align: right;
+    color: $success;
+}
+
+.completed-title {
+    color: $text-muted;
+    text-style: strike;
+}
+
+.completed-label {
+    width: 12;
+    text-align: right;
+    color: $text-muted;
+}
+
+.section-header {
+    text-align: left;
+    height: 1;
+    padding: 0 1;
+    text-style: bold;
+    background: $boost;
+}
+
+.section-header-open {
+    color: $primary;
+}
+
+.section-header-completed {
+    color: $success;
+}
+
+.section-header-beads {
+    color: $accent;
+}
+
+.task-label {
+    width: 14;
+    text-style: bold;
+}
+
+.task-label-gtask {
+    color: $primary;
+}
+
+.task-label-beads {
+    color: $accent;
+}
+
+/* Beads issue status colours (used in BeadsItem widget) */
+.beads-open {
+    color: $text-muted;
+}
+
+.beads-inprogress {
+    color: $warning;
+    text-style: bold;
+}
+
+.beads-blocked {
+    color: $error;
+    text-style: bold;
+}
+
+.beads-deferred {
+    color: $text-muted;
+    text-style: dim;
+}
+
+.beads-subtask-row {
+    padding-left: 2;
+}
+
+.section-empty {
+    color: $text-muted;
+    padding: 0 3;
+}
+
+#empty-label {
+    color: $text-muted;
+    text-align: center;
+    margin-top: 4;
+}
