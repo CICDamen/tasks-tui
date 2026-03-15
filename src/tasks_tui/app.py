@@ -1,18 +1,15 @@
-"""Google Tasks terminal UI."""
+"""Google Tasks terminal UI — application entry point."""
 
 from datetime import datetime
-from pathlib import Path
 
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Footer, Header, ListItem, ListView, Static
+from textual.widgets import Footer, Header, ListView, Static
 
 from tasks_tui.beads_api import (
     BeadsIssue,
     create_beads_child_issue,
-    discover_beads_workspaces,
-    get_beads_label,
     list_beads_issues,
     set_beads_label,
     update_beads_issue,
@@ -30,6 +27,7 @@ from tasks_tui.screens import (
     TaskDetailScreen,
 )
 from tasks_tui.sync import SyncEngine
+from tasks_tui.task_list import render_task_list
 from tasks_tui.tasks_api import (
     Task,
     complete_task,
@@ -41,7 +39,7 @@ from tasks_tui.tasks_api import (
     uncomplete_task,
     update_task,
 )
-from tasks_tui.widgets import BeadsItem, SectionHeader, TaskItem
+from tasks_tui.widgets import BeadsItem, TaskItem
 
 __all__ = [
     "GTasksApp",
@@ -81,6 +79,8 @@ class GTasksApp(App):
         self._beads_issues: list[BeadsIssue] = []
         self._sync_running: bool = False
 
+    # ── Lifecycle ─────────────────────────────────────────────────────────────
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield ListView(id="task-list")
@@ -92,6 +92,8 @@ class GTasksApp(App):
             self.push_screen(SetupScreen(first_run=True), self._on_setup_done)
         else:
             self._start_app()
+
+    # ── Data loading ──────────────────────────────────────────────────────────
 
     def _on_setup_done(self, config: dict | None) -> None:
         if config is not None:
@@ -116,6 +118,7 @@ class GTasksApp(App):
         else:
             self._tasks = []
             self._completed_tasks = []
+
         if self._config["sources"]["beads"]:
             try:
                 self._beads_issues = [
@@ -126,101 +129,28 @@ class GTasksApp(App):
                 self._beads_issues = []
         else:
             self._beads_issues = []
-        self._render_tasks()
 
-    def _render_tasks(self) -> None:
-        lv = self.query_one("#task-list", ListView)
-        lv.clear()
-        if not self._tasks and not self._completed_tasks and not self._beads_issues:
-            lv.append(
-                ListItem(Static("No tasks. Press [n] to create one.", id="empty-label"))
-            )
-            return
+        render_task_list(
+            self.query_one("#task-list", ListView),
+            self._tasks,
+            self._completed_tasks,
+            self._beads_issues,
+            self._config,
+        )
 
-        subtasks_by_parent: dict[str, list[Task]] = {}
-        for t in self._tasks:
-            if t.parent_id:
-                subtasks_by_parent.setdefault(t.parent_id, []).append(t)
-
-        issue_ids = {i.id for i in self._beads_issues}
-        children_by_parent: dict[str, list[BeadsIssue]] = {}
-        beads_top_level: list[BeadsIssue] = []
-        for issue in self._beads_issues:
-            if issue.parent_id and issue.parent_id in issue_ids:
-                children_by_parent.setdefault(issue.parent_id, []).append(issue)
-            else:
-                beads_top_level.append(issue)
-
-        def _append_beads(issue: BeadsIssue, depth: int = 0) -> None:
-            proj_label = get_project_config(issue.project, self._config)["label"]
-            lv.append(BeadsItem(issue, depth=depth, project_label=proj_label))
-            for child in children_by_parent.get(issue.id, []):
-                _append_beads(child, depth + 1)
-
-        def _beads_days(i: BeadsIssue) -> int | None:
-            if not i.due_at:
-                return None
-            try:
-                due_dt = datetime.fromisoformat(i.due_at.replace("Z", "+00:00")).date()
-                return (due_dt - datetime.now().date()).days
-            except ValueError:
-                return None
-
-        # Unified open list: (task|beads, item) sorted by (no_date, days, label)
-        open_items: list[tuple[str, Task | BeadsIssue]] = []
-        for t in self._tasks:
-            if not t.parent_id:
-                open_items.append(("task", t))
-        for i in beads_top_level:
-            open_items.append(("beads", i))
-
-        def _sort_key(entry: tuple) -> tuple:
-            kind, item = entry
-            if kind == "task":
-                days = item.days_until_due
-                label = item.label
-            else:
-                days = _beads_days(item)
-                proj_label = get_project_config(item.project, self._config)["label"]
-                label = get_beads_label(item.id, proj_label)
-            return (days is None, days or 0, label)
-
-        open_items.sort(key=_sort_key)
-
-        lv.append(SectionHeader("Open", variant="open"))
-        if open_items:
-            for kind, item in open_items:
-                if kind == "task":
-                    lv.append(TaskItem(item))
-                    for subtask in subtasks_by_parent.get(item.id, []):
-                        lv.append(TaskItem(subtask, is_subtask=True))
-                else:
-                    _append_beads(item)
-        else:
-            lv.append(ListItem(Static("No open tasks.", classes="section-empty")))
-        if self._completed_tasks:
-            lv.append(ListItem(Static("")))
-            lv.append(SectionHeader("Completed", variant="completed"))
-            for task in self._completed_tasks:
-                lv.append(TaskItem(task))
+    # ── Selection helpers ─────────────────────────────────────────────────────
 
     def _selected_task(self) -> Task | None:
         lv = self.query_one("#task-list", ListView)
-        if lv.highlighted_child is None:
-            return None
         item = lv.highlighted_child
-        if isinstance(item, TaskItem):
-            return item.gtask
-        return None
+        return item.gtask if isinstance(item, TaskItem) else None
 
     def _selected_beads_issue(self) -> BeadsIssue | None:
         lv = self.query_one("#task-list", ListView)
-        if lv.highlighted_child is None:
-            return None
         item = lv.highlighted_child
-        if isinstance(item, BeadsItem):
-            return item.issue
-        return None
+        return item.issue if isinstance(item, BeadsItem) else None
+
+    # ── Sync ──────────────────────────────────────────────────────────────────
 
     def action_sync(self) -> None:
         if not self._config["sync"]["enabled"]:
@@ -242,7 +172,6 @@ class GTasksApp(App):
         except Exception as e:
             messages.append(f"Sync error: {e}")
             error = True
-
         last_msg = messages[-1] if messages else "Sync complete"
         if error or "error" in last_msg.lower():
             self.call_from_thread(self._on_sync_done, last_msg, True)
@@ -262,6 +191,8 @@ class GTasksApp(App):
         if not error:
             self._load_tasks()
 
+    # ── Actions ───────────────────────────────────────────────────────────────
+
     def action_refresh(self) -> None:
         self._load_tasks()
         self.notify("Refreshed")
@@ -269,22 +200,11 @@ class GTasksApp(App):
     def action_open_task(self) -> None:
         issue = self._selected_beads_issue()
         if issue:
-
-            def on_detail_closed(wants_edit: bool) -> None:
-                if wants_edit:
-                    self._open_beads_edit(issue)
-
-            self.push_screen(BeadsDetailScreen(issue), on_detail_closed)
+            self.push_screen(BeadsDetailScreen(issue), lambda e: e and self._open_beads_edit(issue))
             return
         task = self._selected_task()
-        if not task:
-            return
-
-        def on_closed(wants_edit: bool) -> None:
-            if wants_edit:
-                self.action_edit_task()
-
-        self.push_screen(TaskDetailScreen(task), on_closed)
+        if task:
+            self.push_screen(TaskDetailScreen(task), lambda e: e and self.action_edit_task())
 
     def action_new_task(self) -> None:
         def on_result(result: dict | None) -> None:
@@ -307,15 +227,12 @@ class GTasksApp(App):
         if not task:
             self.notify("Select a task first", severity="warning")
             return
-        # Subtasks can only be created under top-level tasks
         parent_id = task.parent_id if task.parent_id else task.id
 
         def on_result(result: dict | None) -> None:
             if result:
                 try:
-                    create_subtask(
-                        result["title"], parent_id, due=result.get("due", "")
-                    )
+                    create_subtask(result["title"], parent_id, due=result.get("due", ""))
                     self._load_tasks()
                     self.notify(f"Subtask created: {result['title']}")
                 except Exception as e:
