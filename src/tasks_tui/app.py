@@ -1534,6 +1534,9 @@ class SetupScreen(ModalScreen):
             if beads_on and search_root and not Path(search_root).expanduser().exists():
                 self.notify("Search root path does not exist", severity="error")
                 return
+            if beads_on and not search_root:
+                self.notify("Search root path is required when beads is enabled", severity="error")
+                return
             projects: dict[str, dict] = dict(self._initial.get("projects", {}))
             for row in self.query(ProjectRow):
                 projects[row.project_name] = row.get_values()
@@ -1545,7 +1548,7 @@ class SetupScreen(ModalScreen):
                 "sources": {
                     "google_tasks": self.query_one("#sw-google-tasks", Switch).value,
                     "beads": self.query_one("#sw-beads", Switch).value,
-                    "beads_search_root": self.query_one("#sw-search-root", Input).value,
+                    "beads_search_root": search_root,
                 },
                 "projects": projects,
             })
