@@ -304,6 +304,28 @@ def update_task_in_list(
     _gws("tasks", "patch", params={"tasklist": tasklist_id, "task": task_id}, body=body)
 
 
+def list_tasks_in_list(tasklist_id: str) -> list[Task]:
+    """Return all active (non-completed) tasks in the given tasklist."""
+    data = _gws(
+        "tasks",
+        "list",
+        params={"tasklist": tasklist_id, "showCompleted": False, "showHidden": False},
+    )
+    items = data.get("items", [])
+    return [
+        Task(
+            id=t["id"],
+            title=t.get("title", ""),
+            status=t.get("status", "needsAction"),
+            notes=t.get("notes", ""),
+            due=t.get("due", ""),
+            parent_id=t.get("parent", ""),
+        )
+        for t in items
+        if t.get("title")
+    ]
+
+
 def complete_task_in_list(tasklist_id: str, task_id: str) -> None:
     """Mark a task in the given tasklist as completed."""
     _gws(

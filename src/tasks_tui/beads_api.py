@@ -280,6 +280,26 @@ def update_beads_issue(
     subprocess.run(cmd, check=True, capture_output=True)
 
 
+def create_beads_issue(
+    workspace_path: str,
+    db_path: str,
+    title: str,
+    description: str = "",
+    due: str = "",
+    priority: int = 2,
+) -> str:
+    """Create a top-level beads issue via the bd CLI. Returns the new issue ID."""
+    cmd = ["bd", "create", title, "--db", db_path, "--silent"]
+    if description:
+        cmd += ["--description", description]
+    if due:
+        cmd += ["--due", due]
+    if priority != 2:
+        cmd += ["--priority", str(priority)]
+    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    return result.stdout.strip()
+
+
 def create_beads_child_issue(
     parent: BeadsIssue,
     title: str,
