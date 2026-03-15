@@ -764,7 +764,7 @@ async def test_setup_screen_save_before_discovery_preserves_existing_projects():
     """Saving before background discovery completes does not wipe existing project configs."""
     existing_config = {
         "sync": {"enabled": True, "auto_sync_on_start": True},
-        "sources": {"google_tasks": True, "beads": True, "beads_search_root": "~/Code"},
+        "sources": {"google_tasks": True, "beads": True, "beads_search_root": "/tmp"},
         "projects": {"myapp": {"sync": False, "visible": True, "label": "my-label"}},
     }
     with (
