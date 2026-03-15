@@ -155,13 +155,18 @@ class TestFieldsFromIssue:
         )
         fields = fields_from_issue(issue)
         assert fields["title"] == "Hello"
-        assert fields["notes"] == "Notes"
+        assert fields["notes"] == "Notes (bd)"
         assert fields["due"] == "2026-04-01T00:00:00.000Z"
 
-    def test_none_description_becomes_empty_string(self):
+    def test_none_description_becomes_bd_marker_only(self):
         issue = _make_issue(description=None)
         fields = fields_from_issue(issue)
-        assert fields["notes"] == ""
+        assert fields["notes"] == "(bd)"
+
+    def test_empty_description_becomes_bd_marker_only(self):
+        issue = _make_issue(description="")
+        fields = fields_from_issue(issue)
+        assert fields["notes"] == "(bd)"
 
     def test_empty_due_at_becomes_empty_string(self):
         issue = _make_issue(due_at="")

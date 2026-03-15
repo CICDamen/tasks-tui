@@ -82,10 +82,16 @@ def _beads_due_to_gtask_due(due_at: str) -> str:
 
 
 def fields_from_issue(issue: BeadsIssue) -> dict:
-    """Convert a BeadsIssue to a dict of Google Tasks API fields."""
+    """Convert a BeadsIssue to a dict of Google Tasks API fields.
+
+    The (bd) marker is appended to notes so that the Google Task is identifiable
+    as being tracked by beads.
+    """
+    description = issue.description or ""
+    notes = f"{description} {BD_MARKER}".strip()
     return {
         "title": issue.title,
-        "notes": issue.description or "",
+        "notes": notes,
         "due": _beads_due_to_gtask_due(issue.due_at),
     }
 
