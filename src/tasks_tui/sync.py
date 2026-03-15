@@ -10,6 +10,7 @@ from pathlib import Path
 from tasks_tui.config import get_project_config
 from tasks_tui.beads_api import (
     BeadsIssue,
+    create_beads_issue,
     discover_beads_workspaces,
     list_closed_mapped_issues,
     list_issues_via_cli,
@@ -19,6 +20,7 @@ from tasks_tui.tasks_api import (
     create_task_in_list,
     create_tasklist,
     list_tasklists,
+    list_tasks_in_list,
     update_task_in_list,
 )
 
@@ -90,6 +92,19 @@ def fields_from_issue(issue: BeadsIssue) -> dict:
 
 def _now_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+BD_MARKER = "(bd)"
+
+
+def _has_bd_marker(notes: str | None) -> bool:
+    """Return True if the text contains the (bd) beads sync marker."""
+    return BD_MARKER in (notes or "")
+
+
+def _strip_bd_marker(notes: str | None) -> str:
+    """Remove the (bd) marker from text and normalise surrounding whitespace."""
+    return " ".join((notes or "").replace(BD_MARKER, " ").split())
 
 
 
@@ -193,6 +208,52 @@ class SyncEngine:
             e for e in self._mapping["mappings"] if e["beads_id"] != beads_id
         ]
 
+    def _mapped_gtask_ids(self) -> set[str]:
+        """Return the set of all gtask_ids that are already in the mapping."""
+        return {e["gtask_id"] for e in self._mapping["mappings"]}
+
+    def _sync_gtasks_to_beads(
+        self,
+        tasklist_id: str,
+        workspace_path: str,
+        db_path: str,
+        project_name: str,
+        errors: list[str],
+    ) -> None:
+        """Pull Google Tasks with (bd) marker into beads as new issues."""
+        try:
+            tasks = list_tasks_in_list(tasklist_id)
+        except Exception as e:
+            errors.append(f"list tasks for {project_name}: {e}")
+            return
+
+        already_mapped = self._mapped_gtask_ids()
+        for task in tasks:
+            if task.id in already_mapped:
+                continue
+            if not _has_bd_marker(task.notes):
+                continue
+            description = _strip_bd_marker(task.notes)
+            try:
+                new_id = create_beads_issue(
+                    workspace_path=workspace_path,
+                    db_path=db_path,
+                    title=task.title,
+                    description=description,
+                    due=task.due,
+                )
+                self._mapping["mappings"].append(
+                    {
+                        "beads_id": new_id,
+                        "beads_db_path": db_path,
+                        "gtask_id": task.id,
+                        "gtask_list_id": tasklist_id,
+                        "last_synced_at": _now_utc(),
+                    }
+                )
+            except Exception as e:
+                errors.append(f"create beads issue from gtask {task.id}: {e}")
+
     def _sync_project(
         self, workspace_path: str, db_path: str, project_name: str, errors: list[str]
     ) -> None:
@@ -247,3 +308,6 @@ class SyncEngine:
                 self._remove_entry(beads_id)
             except Exception as e:
                 errors.append(f"complete orphan {beads_id}: {e}")
+
+        # Google Tasks → beads: pull tasks with (bd) marker into beads as new issues
+        self._sync_gtasks_to_beads(tasklist_id, workspace_path, db_path, project_name, errors)
