@@ -151,6 +151,8 @@ def _gws(
         raise RuntimeError(
             "gws CLI not found. Install it and ensure it is on your PATH."
         ) from None
+    if not result.stdout.strip():
+        return {}
     return json.loads(result.stdout)
 
 
