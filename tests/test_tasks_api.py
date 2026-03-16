@@ -2,7 +2,6 @@
 
 from unittest.mock import patch
 
-from gtasks_tui.date_utils import _parse_due
 from gtasks_tui.tasks_api import Task, create_task, list_tasks
 
 
@@ -128,32 +127,3 @@ class TestCreateTask:
             create_task("Baz", due="")
         body = mock.call_args[1]["body"] if mock.call_args[1] else mock.call_args[0][3]
         assert "due" not in body
-
-
-# ---------------------------------------------------------------------------
-# _parse_due (from date_utils)
-# ---------------------------------------------------------------------------
-
-
-class TestParseDue:
-    def test_empty_string(self):
-        assert _parse_due("") == ""
-
-    def test_today(self, freezegun_today):
-        result = _parse_due("today")
-        assert result.startswith("2026-03-12")
-
-    def test_tomorrow(self, freezegun_today):
-        result = _parse_due("tomorrow")
-        assert result.startswith("2026-03-13")
-
-    def test_iso_date(self):
-        result = _parse_due("2026-04-01")
-        assert result.startswith("2026-04-01")
-
-    def test_month_day(self, freezegun_today):
-        result = _parse_due("Mar 20")
-        assert result.startswith("2026-03-20")
-
-    def test_garbage_returns_empty(self):
-        assert _parse_due("not a date at all") == ""
