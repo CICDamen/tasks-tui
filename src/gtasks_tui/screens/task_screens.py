@@ -11,27 +11,17 @@ from gtasks_tui.screens.shared import DatePickerScreen
 from gtasks_tui.tasks_api import Task
 
 
-class NewTaskScreen(ModalScreen[dict | None]):
-    """Modal for creating a new task."""
+class _BaseTaskScreen(ModalScreen[dict | None]):
+    """Shared base for NewTaskScreen and EditTaskScreen."""
 
     BINDINGS = [
         Binding("escape", "cancel", "Cancel"),
         Binding("ctrl+s", "confirm", "Save"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, due_iso: str = "") -> None:
         super().__init__()
-        self._due_iso = ""
-
-    def compose(self) -> ComposeResult:
-        with Vertical(id="new-task-dialog"):
-            yield Label("New Task", id="dialog-title")
-            yield Input(placeholder="Label (optional)...", id="task-label")
-            yield Input(placeholder="Task title...", id="task-title")
-            with Horizontal(classes="due-row"):
-                yield Button("📅  No date", id="due-btn", classes="due-btn")
-                yield Button("✕", id="clear-btn", classes="clear-btn")
-            yield Static("ctrl+s save  esc cancel", id="dialog-hint")
+        self._due_iso = due_iso
 
     def on_mount(self) -> None:
         self.query_one("#task-title", Input).focus()
@@ -55,6 +45,23 @@ class NewTaskScreen(ModalScreen[dict | None]):
 
         self.app.push_screen(DatePickerScreen(initial), on_picked)
 
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
+class NewTaskScreen(_BaseTaskScreen):
+    """Modal for creating a new task."""
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="new-task-dialog"):
+            yield Label("New Task", id="dialog-title")
+            yield Input(placeholder="Label (optional)...", id="task-label")
+            yield Input(placeholder="Task title...", id="task-title")
+            with Horizontal(classes="due-row"):
+                yield Button("📅  No date", id="due-btn", classes="due-btn")
+                yield Button("✕", id="clear-btn", classes="clear-btn")
+            yield Static("ctrl+s save  esc cancel", id="dialog-hint")
+
     def action_confirm(self) -> None:
         label = self.query_one("#task-label", Input).value.strip()
         title = self.query_one("#task-title", Input).value.strip()
@@ -64,22 +71,13 @@ class NewTaskScreen(ModalScreen[dict | None]):
             title = f"[{label}] {title}"
         self.dismiss({"title": title, "due": self._due_iso})
 
-    def action_cancel(self) -> None:
-        self.dismiss(None)
 
-
-class EditTaskScreen(ModalScreen[dict | None]):
+class EditTaskScreen(_BaseTaskScreen):
     """Modal for editing an existing task."""
 
-    BINDINGS = [
-        Binding("escape", "cancel", "Cancel"),
-        Binding("ctrl+s", "confirm", "Save"),
-    ]
-
     def __init__(self, task: Task) -> None:
-        super().__init__()
+        super().__init__(due_iso=task.due)
         self._edit_task = task
-        self._due_iso = task.due
 
     def compose(self) -> ComposeResult:
         with Vertical(id="new-task-dialog"):
@@ -98,28 +96,6 @@ class EditTaskScreen(ModalScreen[dict | None]):
             yield TextArea(self._edit_task.notes, id="task-notes")
             yield Static("ctrl+s save  esc cancel", id="dialog-hint")
 
-    def on_mount(self) -> None:
-        self.query_one("#task-title", Input).focus()
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "due-btn":
-            self._open_picker()
-        elif event.button.id == "clear-btn":
-            self._due_iso = ""
-            self.query_one("#due-btn", Button).label = "📅  No date"
-
-    def _open_picker(self) -> None:
-        initial = _iso_to_date(self._due_iso)
-
-        def on_picked(result: str | None) -> None:
-            if result is not None:
-                self._due_iso = result + "T00:00:00.000Z"
-                self.query_one("#due-btn", Button).label = _format_date_label(
-                    self._due_iso
-                )
-
-        self.app.push_screen(DatePickerScreen(initial), on_picked)
-
     def action_confirm(self) -> None:
         label = self.query_one("#task-label", Input).value.strip()
         title = self.query_one("#task-title", Input).value.strip()
@@ -129,9 +105,6 @@ class EditTaskScreen(ModalScreen[dict | None]):
             title = f"[{label}] {title}"
         notes = self.query_one("#task-notes", TextArea).text
         self.dismiss({"title": title, "due": self._due_iso, "notes": notes})
-
-    def action_cancel(self) -> None:
-        self.dismiss(None)
 
 
 class TaskDetailScreen(ModalScreen[bool]):
