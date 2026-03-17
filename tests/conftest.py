@@ -5,6 +5,16 @@ from unittest.mock import patch
 
 import pytest
 
+import gtasks_tui.tasks_api
+
+
+@pytest.fixture(autouse=True)
+def reset_tasklists_cache():
+    """Reset the module-level tasklist cache before each test for isolation."""
+    gtasks_tui.tasks_api._cached_tasklists = None
+    yield
+    gtasks_tui.tasks_api._cached_tasklists = None
+
 
 @pytest.fixture
 def freezegun_today():

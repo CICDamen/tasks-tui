@@ -63,12 +63,9 @@ class NewTaskScreen(_BaseTaskScreen):
             yield Static("ctrl+s save  esc cancel", id="dialog-hint")
 
     def action_confirm(self) -> None:
-        label = self.query_one("#task-label", Input).value.strip()
         title = self.query_one("#task-title", Input).value.strip()
         if not title:
             return
-        if label:
-            title = f"[{label}] {title}"
         self.dismiss({"title": title, "due": self._due_iso})
 
 
@@ -97,12 +94,9 @@ class EditTaskScreen(_BaseTaskScreen):
             yield Static("ctrl+s save  esc cancel", id="dialog-hint")
 
     def action_confirm(self) -> None:
-        label = self.query_one("#task-label", Input).value.strip()
         title = self.query_one("#task-title", Input).value.strip()
         if not title:
             return
-        if label:
-            title = f"[{label}] {title}"
         notes = self.query_one("#task-notes", TextArea).text
         self.dismiss({"title": title, "due": self._due_iso, "notes": notes})
 

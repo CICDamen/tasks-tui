@@ -54,6 +54,8 @@ class GTasksApp(App):
         self._tasks: list[Task] = []
         self._completed_tasks: list[Task] = []
         self._filter_days: int | None = None
+        self._filter_lists: set[str] | None = None
+        self._available_lists: list[str] = []
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -87,11 +89,18 @@ class GTasksApp(App):
     ) -> None:
         self._tasks = tasks
         self._completed_tasks = completed_tasks
+        seen: set[str] = set()
+        self._available_lists = [
+            t.list_title
+            for t in tasks + completed_tasks
+            if t.list_title and not (t.list_title in seen or seen.add(t.list_title))
+        ]
         render_task_list(
             self.query_one("#task-list", ListView),
             self._tasks,
             self._completed_tasks,
             filter_days=self._filter_days,
+            filter_lists=self._filter_lists,
         )
 
     # ── Selection helpers ─────────────────────────────────────────────────────
@@ -132,12 +141,16 @@ class GTasksApp(App):
             self.notify("Select a task first", severity="warning")
             return
         parent_id = task.parent_id if task.parent_id else task.id
+        list_id = task.list_id
 
         def on_result(result: dict | None) -> None:
             if result:
                 try:
                     create_subtask(
-                        result["title"], parent_id, due=result.get("due", "")
+                        result["title"],
+                        parent_id,
+                        list_id=list_id,
+                        due=result.get("due", ""),
                     )
                     self._load_tasks()
                     self.notify(f"Subtask created: {result['title']}")
@@ -152,11 +165,11 @@ class GTasksApp(App):
             return
         try:
             if task.completed:
-                uncomplete_task(task.id)
+                uncomplete_task(task.id, list_id=task.list_id)
                 self._load_tasks()
                 self.notify(f"Reopened: {task.title}")
             else:
-                complete_task(task.id)
+                complete_task(task.id, list_id=task.list_id)
                 self._load_tasks()
                 self.notify(f"Completed: {task.title}")
         except Exception as e:
@@ -173,6 +186,7 @@ class GTasksApp(App):
                     update_task(
                         task.id,
                         result["title"],
+                        list_id=task.list_id,
                         due=result.get("due", ""),
                         notes=result.get("notes", ""),
                     )
@@ -188,7 +202,7 @@ class GTasksApp(App):
         if not task:
             return
         try:
-            delete_task(task.id)
+            delete_task(task.id, list_id=task.list_id)
             self._load_tasks()
             self.notify(f"Deleted: {task.title}")
         except Exception as e:
@@ -198,9 +212,17 @@ class GTasksApp(App):
         def on_result(result: dict | None) -> None:
             if result is not None:
                 self._filter_days = result["days"]
-                self._load_tasks()
+                self._filter_lists = result.get("lists")
+                self._apply_loaded_tasks(self._tasks, self._completed_tasks)
 
-        self.push_screen(FilterScreen(filter_days=self._filter_days), on_result)
+        self.push_screen(
+            FilterScreen(
+                filter_days=self._filter_days,
+                available_lists=self._available_lists,
+                selected_lists=self._filter_lists,
+            ),
+            on_result,
+        )
 
 
 def main() -> None:

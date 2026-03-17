@@ -174,7 +174,7 @@ async def test_space_completes_open_task():
             await pilot.pause()
             pilot.app.action_toggle_complete()
             await pilot.pause()
-            mock_complete.assert_called_once_with("1")
+            mock_complete.assert_called_once_with("1", list_id="")
 
 
 @pytest.mark.asyncio
@@ -191,7 +191,7 @@ async def test_space_uncompletes_completed_task():
             await pilot.pause()
             pilot.app.action_toggle_complete()
             await pilot.pause()
-            mock_uncomplete.assert_called_once_with("4")
+            mock_uncomplete.assert_called_once_with("4", list_id="")
 
 
 @pytest.mark.asyncio
@@ -230,7 +230,7 @@ async def test_delete_open_task():
             await pilot.pause()
             pilot.app.action_delete_task()
             await pilot.pause()
-            mock_delete.assert_called_once_with("1")
+            mock_delete.assert_called_once_with("1", list_id="")
 
 
 @pytest.mark.asyncio
@@ -247,7 +247,7 @@ async def test_delete_completed_task():
             await pilot.pause()
             pilot.app.action_delete_task()
             await pilot.pause()
-            mock_delete.assert_called_once_with("4")
+            mock_delete.assert_called_once_with("4", list_id="")
 
 
 @pytest.mark.asyncio
@@ -276,7 +276,7 @@ async def test_delete_on_section_header_does_nothing():
 async def test_edit_task_updates_title():
     updated = {}
 
-    def fake_update(task_id, title, due="", notes=""):
+    def fake_update(task_id, title, list_id="", due="", notes=""):
         updated["id"] = task_id
         updated["title"] = title
 
@@ -320,7 +320,7 @@ async def test_edit_cancelled_with_escape():
 async def test_edit_task_updates_notes():
     updated = {}
 
-    def fake_update(task_id, title, due="", notes=""):
+    def fake_update(task_id, title, list_id="", due="", notes=""):
         updated["notes"] = notes
 
     with (
@@ -344,7 +344,7 @@ async def test_edit_task_updates_notes():
 async def test_edit_task_preserves_existing_due():
     updated = {}
 
-    def fake_update(task_id, title, due="", notes=""):
+    def fake_update(task_id, title, list_id="", due="", notes=""):
         updated["due"] = due
 
     task_with_due = OPEN_TASKS[0]
