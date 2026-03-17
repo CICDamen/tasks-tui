@@ -6,26 +6,27 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-_cached_tasklist_id: str | None = None
-_cached_tasklist_title: str = "My Tasks"
+_cached_tasklists: list[dict] | None = None
 
 
-def _default_tasklist_id() -> str:
-    """Return the ID of the primary Google Tasks list ('My Tasks'), discovered on first call."""
-    global _cached_tasklist_id, _cached_tasklist_title
-    if _cached_tasklist_id is not None:
-        return _cached_tasklist_id
+def get_all_tasklists() -> list[dict]:
+    """Return all Google Tasks lists, caching on first call."""
+    global _cached_tasklists
+    if _cached_tasklists is not None:
+        return _cached_tasklists
     data = _gws("tasklists", "list")
-    items = data.get("items", [])
-    for item in items:
+    _cached_tasklists = data.get("items", [])
+    return _cached_tasklists
+
+
+def _default_tasklist() -> dict:
+    """Return the primary list dict ('My Tasks' or first available)."""
+    lists = get_all_tasklists()
+    for item in lists:
         if item.get("title") == "My Tasks":
-            _cached_tasklist_id = item["id"]
-            _cached_tasklist_title = item.get("title", "My Tasks")
-            return _cached_tasklist_id
-    if items:
-        _cached_tasklist_id = items[0]["id"]
-        _cached_tasklist_title = items[0].get("title", "My Tasks")
-        return _cached_tasklist_id
+            return item
+    if lists:
+        return lists[0]
     raise RuntimeError("No Google Tasks lists found. Is gws authenticated?")
 
 
@@ -39,6 +40,7 @@ class Task:
     completed_at: str = ""  # ISO 8601 date string or ""
     parent_id: str = ""  # non-empty for subtasks
     list_title: str = ""  # name of the Google Tasks list this task belongs to
+    list_id: str = ""  # ID of the Google Tasks list this task belongs to
 
     @property
     def label(self) -> str:
@@ -156,18 +158,17 @@ def _gws(
     return json.loads(result.stdout)
 
 
-def list_tasks() -> list[Task]:
-    tasklist_id = _default_tasklist_id()
+def _fetch_tasks_from_list(lst: dict) -> list[Task]:
+    """Fetch open tasks from a single task list."""
     data = _gws(
         "tasks",
         "list",
         params={
-            "tasklist": tasklist_id,
+            "tasklist": lst["id"],
             "showCompleted": False,
             "showHidden": False,
         },
     )
-    items = data.get("items", [])
     return [
         Task(
             id=t["id"],
@@ -176,25 +177,26 @@ def list_tasks() -> list[Task]:
             notes=t.get("notes", ""),
             due=t.get("due", ""),
             parent_id=t.get("parent", ""),
-            list_title=_cached_tasklist_title,
+            list_title=lst.get("title", ""),
+            list_id=lst["id"],
         )
-        for t in items
+        for t in data.get("items", [])
         if t.get("title")
     ]
 
 
-def list_completed_tasks(max_results: int = 20) -> list[Task]:
+def _fetch_completed_from_list(lst: dict, max_results: int = 20) -> list[Task]:
+    """Fetch completed tasks from a single task list."""
     data = _gws(
         "tasks",
         "list",
         params={
-            "tasklist": _default_tasklist_id(),
+            "tasklist": lst["id"],
             "showCompleted": True,
             "showHidden": True,
             "maxResults": max_results,
         },
     )
-    items = data.get("items", [])
     return [
         Task(
             id=t["id"],
@@ -203,14 +205,32 @@ def list_completed_tasks(max_results: int = 20) -> list[Task]:
             notes=t.get("notes", ""),
             due=t.get("due", ""),
             completed_at=t.get("completed", ""),
-            list_title=_cached_tasklist_title,
+            list_title=lst.get("title", ""),
+            list_id=lst["id"],
         )
-        for t in items
+        for t in data.get("items", [])
         if t.get("title") and t.get("status") == "completed"
     ]
 
 
-def create_subtask(title: str, parent_id: str, due: str = "", notes: str = "") -> Task:
+def list_tasks() -> list[Task]:
+    tasks: list[Task] = []
+    for lst in get_all_tasklists():
+        tasks.extend(_fetch_tasks_from_list(lst))
+    return tasks
+
+
+def list_completed_tasks(max_results: int = 20) -> list[Task]:
+    tasks: list[Task] = []
+    for lst in get_all_tasklists():
+        tasks.extend(_fetch_completed_from_list(lst, max_results))
+    return tasks
+
+
+def create_subtask(
+    title: str, parent_id: str, list_id: str = "", due: str = "", notes: str = ""
+) -> Task:
+    tasklist_id = list_id or _default_tasklist()["id"]
     body: dict = {"title": title, "status": "needsAction"}
     if due:
         body["due"] = due
@@ -219,7 +239,7 @@ def create_subtask(title: str, parent_id: str, due: str = "", notes: str = "") -
     t = _gws(
         "tasks",
         "insert",
-        params={"tasklist": _default_tasklist_id(), "parent": parent_id},
+        params={"tasklist": tasklist_id, "parent": parent_id},
         body=body,
     )
     return Task(
@@ -229,26 +249,32 @@ def create_subtask(title: str, parent_id: str, due: str = "", notes: str = "") -
         notes=t.get("notes", ""),
         due=t.get("due", ""),
         parent_id=parent_id,
+        list_id=tasklist_id,
     )
 
 
 def create_task(title: str, due: str = "", notes: str = "") -> Task:
+    tasklist_id = _default_tasklist()["id"]
     body: dict = {"title": title, "status": "needsAction"}
     if due:
         body["due"] = due
     if notes:
         body["notes"] = notes
-    t = _gws("tasks", "insert", params={"tasklist": _default_tasklist_id()}, body=body)
+    t = _gws("tasks", "insert", params={"tasklist": tasklist_id}, body=body)
     return Task(
         id=t["id"],
         title=t["title"],
         status=t["status"],
         notes=t.get("notes", ""),
         due=t.get("due", ""),
+        list_id=tasklist_id,
     )
 
 
-def update_task(task_id: str, title: str, due: str = "", notes: str = "") -> None:
+def update_task(
+    task_id: str, title: str, list_id: str = "", due: str = "", notes: str = ""
+) -> None:
+    tasklist_id = list_id or _default_tasklist()["id"]
     body: dict = {"title": title}
     if notes:
         body["notes"] = notes
@@ -257,30 +283,31 @@ def update_task(task_id: str, title: str, due: str = "", notes: str = "") -> Non
     _gws(
         "tasks",
         "patch",
-        params={"tasklist": _default_tasklist_id(), "task": task_id},
+        params={"tasklist": tasklist_id, "task": task_id},
         body=body,
     )
 
 
-def complete_task(task_id: str) -> None:
+def complete_task(task_id: str, list_id: str = "") -> None:
+    tasklist_id = list_id or _default_tasklist()["id"]
     _gws(
         "tasks",
         "patch",
-        params={"tasklist": _default_tasklist_id(), "task": task_id},
+        params={"tasklist": tasklist_id, "task": task_id},
         body={"status": "completed"},
     )
 
 
-def uncomplete_task(task_id: str) -> None:
+def uncomplete_task(task_id: str, list_id: str = "") -> None:
+    tasklist_id = list_id or _default_tasklist()["id"]
     _gws(
         "tasks",
         "patch",
-        params={"tasklist": _default_tasklist_id(), "task": task_id},
+        params={"tasklist": tasklist_id, "task": task_id},
         body={"status": "needsAction"},
     )
 
 
-def delete_task(task_id: str) -> None:
-    _gws(
-        "tasks", "delete", params={"tasklist": _default_tasklist_id(), "task": task_id}
-    )
+def delete_task(task_id: str, list_id: str = "") -> None:
+    tasklist_id = list_id or _default_tasklist()["id"]
+    _gws("tasks", "delete", params={"tasklist": tasklist_id, "task": task_id})

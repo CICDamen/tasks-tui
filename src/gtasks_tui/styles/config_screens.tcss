@@ -151,6 +151,51 @@
     margin-bottom: 1;
 }
 
+#filter-lists-label {
+    color: $accent;
+    text-style: bold;
+    margin-top: 1;
+    margin-bottom: 0;
+}
+
+#filter-lists-buttons {
+    height: 1;
+    margin-top: 1;
+    margin-bottom: 0;
+    align: left middle;
+}
+
+#filter-lists-buttons Button {
+    min-width: 6;
+    height: 1;
+    border: none;
+    background: $accent 15%;
+    color: $accent;
+    padding: 0 1;
+    margin-right: 1;
+    text-style: bold;
+}
+
+#filter-lists-buttons Button:hover {
+    background: $accent 35%;
+    color: $text;
+}
+
+#filter-lists-buttons Button:focus {
+    background: $accent 35%;
+    color: $text;
+    border: none;
+    text-style: bold;
+}
+
+#filter-lists {
+    height: auto;
+    max-height: 12;
+    margin-top: 1;
+    margin-bottom: 1;
+    border: none;
+}
+
 #filter-hint {
     color: $text-muted;
     text-align: center;

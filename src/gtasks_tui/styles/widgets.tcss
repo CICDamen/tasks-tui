@@ -95,9 +95,12 @@
     text-style: bold;
 }
 
-.task-label-gtask {
-    color: $warning;
-}
+.task-label-color-0 { color: #f59e0b; }
+.task-label-color-1 { color: #6366f1; }
+.task-label-color-2 { color: #22c55e; }
+.task-label-color-3 { color: #f87171; }
+.task-label-color-4 { color: #a78bfa; }
+.task-label-color-5 { color: #22d3ee; }
 
 .section-empty {
     color: $text-muted;

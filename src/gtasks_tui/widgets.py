@@ -1,10 +1,21 @@
 """Reusable list-item widgets for the task list view."""
 
+import hashlib
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import ListItem, Static
 
 from gtasks_tui.tasks_api import Task
+
+
+# Six distinct colors for terminal — assigned to lists via hash
+_LIST_COLOR_COUNT = 6
+
+
+def _list_color_class(list_title: str) -> str:
+    index = int(hashlib.md5(list_title.encode()).hexdigest(), 16) % _LIST_COLOR_COUNT
+    return f"task-label-color-{index}"
 
 
 class SectionHeader(ListItem):
@@ -41,12 +52,13 @@ class TaskItem(ListItem):
 
         row_class = "task-row subtask-row" if self._is_subtask else "task-row"
         label = self.gtask.label or self.gtask.list_title
-        label_text = f"\\[{label}]" if (label and not self._is_subtask) else " "
+        label_text = f"\\[{label}]" if label else " "
+        color_class = _list_color_class(label) if label else "task-label-color-0"
         with Horizontal(classes=row_class):
             if self._is_subtask:
                 yield Static("↳", classes="subtask-prefix")
             yield Static(icon, classes=f"task-icon {icon_class}")
-            yield Static(label_text, classes="task-label task-label-gtask")
+            yield Static(label_text, classes=f"task-label {color_class}")
             yield Static(self.gtask.display_title, classes=title_class)
             if date_text:
                 yield Static(date_text, classes=date_class)

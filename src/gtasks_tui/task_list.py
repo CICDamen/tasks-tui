@@ -14,9 +14,14 @@ def render_task_list(
     tasks: list[Task],
     completed_tasks: list[Task],
     filter_days: int | None = None,
+    filter_lists: set[str] | None = None,
 ) -> None:
     """Clear and repopulate *lv* with tasks and subtasks."""
     lv.clear()
+
+    if filter_lists is not None:
+        tasks = [t for t in tasks if t.list_title in filter_lists]
+        completed_tasks = [t for t in completed_tasks if t.list_title in filter_lists]
 
     if filter_days is not None:
         cutoff = datetime.now().date() - timedelta(days=filter_days)
