@@ -43,7 +43,7 @@ class GTasksApp(App):
         Binding("e", "edit_task", "Edit"),
         Binding("space", "toggle_complete", "Check/Uncheck"),
         Binding("d", "delete_task", "Delete"),
-        Binding("r", "refresh", "Refresh", show=False),
+        Binding("r", "refresh", "Refresh"),
         Binding("f", "filter", "Filter"),
     ]
 
