@@ -56,6 +56,7 @@ class GTasksApp(App):
         self._filter_days: int | None = None
         self._filter_lists: set[str] | None = None
         self._available_lists: list[str] = []
+        self._load_generation: int = 0
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -69,10 +70,11 @@ class GTasksApp(App):
     # ── Data loading ──────────────────────────────────────────────────────────
 
     def _load_tasks(self) -> None:
-        self._load_worker()
+        self._load_generation += 1
+        self._load_worker(self._load_generation)
 
     @work(thread=True)
-    def _load_worker(self) -> None:
+    def _load_worker(self, generation: int) -> None:
         try:
             tasks = list_tasks()
             completed = list_completed_tasks()
@@ -80,13 +82,17 @@ class GTasksApp(App):
             self.call_from_thread(
                 self.notify, f"Failed to load tasks: {e}", severity="error"
             )
-            tasks = []
-            completed = []
-        self.call_from_thread(self._apply_loaded_tasks, tasks, completed)
+            return
+        self.call_from_thread(self._apply_loaded_tasks, tasks, completed, generation)
 
     def _apply_loaded_tasks(
-        self, tasks: list[Task], completed_tasks: list[Task]
+        self,
+        tasks: list[Task],
+        completed_tasks: list[Task],
+        generation: int | None = None,
     ) -> None:
+        if generation is not None and generation != self._load_generation:
+            return  # Discard stale response from an older worker
         self._tasks = tasks
         self._completed_tasks = completed_tasks
         seen: set[str] = set()
@@ -114,7 +120,7 @@ class GTasksApp(App):
 
     def action_refresh(self) -> None:
         self._load_tasks()
-        self.notify("Refreshed")
+        self.notify("Refreshing...")
 
     def action_open_task(self) -> None:
         task = self._selected_task()
