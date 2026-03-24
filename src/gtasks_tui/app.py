@@ -86,7 +86,10 @@ class GTasksApp(App):
         self.call_from_thread(self._apply_loaded_tasks, tasks, completed, generation)
 
     def _apply_loaded_tasks(
-        self, tasks: list[Task], completed_tasks: list[Task], generation: int | None = None
+        self,
+        tasks: list[Task],
+        completed_tasks: list[Task],
+        generation: int | None = None,
     ) -> None:
         if generation is not None and generation != self._load_generation:
             return  # Discard stale response from an older worker
