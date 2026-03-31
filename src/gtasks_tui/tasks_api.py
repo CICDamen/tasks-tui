@@ -75,7 +75,7 @@ class Task:
     @property
     def due_label(self) -> str:
         if not self.due:
-            return "today"
+            return ""
         days = self.days_until_due
         if days is None:
             return ""
@@ -96,7 +96,7 @@ class Task:
     @property
     def due_css_class(self) -> str:
         if not self.due:
-            return "due-urgent"
+            return "due-label"
         days = self.days_until_due
         if days is None:
             return "due-label"
