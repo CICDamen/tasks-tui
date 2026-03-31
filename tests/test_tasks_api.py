@@ -16,8 +16,8 @@ class TestTaskDueLabel:
     def _task(self, due: str = "") -> Task:
         return Task(id="1", title="Test", status="needsAction", due=due)
 
-    def test_no_due_returns_today(self):
-        assert self._task().due_label == "today"
+    def test_no_due_returns_empty(self):
+        assert self._task().due_label == ""
 
     def test_today(self, freezegun_today):
         assert self._task("2026-03-12T00:00:00.000Z").due_label == "today"
