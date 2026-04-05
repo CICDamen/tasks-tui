@@ -53,7 +53,7 @@ class GTasksApp(App):
         super().__init__()
         self._tasks: list[Task] = []
         self._completed_tasks: list[Task] = []
-        self._filter_days: int | None = None
+        self._filter_days: int | None = 7
         self._filter_lists: set[str] | None = None
         self._available_lists: list[str] = []
         self._load_generation: int = 0
