@@ -15,6 +15,7 @@ def render_task_list(
     completed_tasks: list[Task],
     filter_days: int | None = None,
     filter_lists: set[str] | None = None,
+    sort_key: str = "due_date",
 ) -> None:
     """Clear and repopulate *lv* with tasks and subtasks."""
     lv.clear()
@@ -43,9 +44,19 @@ def render_task_list(
             subtasks_by_parent.setdefault(t.parent_id, []).append(t)
 
     top_level = [t for t in tasks if not t.parent_id]
-    top_level.sort(
-        key=lambda t: (t.days_until_due is None, t.days_until_due or 0, t.label)
-    )
+    if sort_key == "label":
+        top_level.sort(
+            key=lambda t: (
+                not t.label,
+                t.label or "",
+                t.days_until_due is None,
+                t.days_until_due or 0,
+            )
+        )
+    else:
+        top_level.sort(
+            key=lambda t: (t.days_until_due is None, t.days_until_due or 0, t.label)
+        )
 
     lv.append(SectionHeader("Open", variant="open"))
     if top_level:

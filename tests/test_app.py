@@ -64,7 +64,7 @@ async def test_renders_open_tasks():
 
 
 @pytest.mark.asyncio
-async def test_renders_completed_tasks():
+async def test_renders_completed_tasks(freezegun_today):
     with (
         patch("gtasks_tui.app.list_tasks", return_value=[]),
         patch("gtasks_tui.app.list_completed_tasks", return_value=COMPLETED_TASKS),
@@ -89,7 +89,7 @@ async def test_renders_open_section_header():
 
 
 @pytest.mark.asyncio
-async def test_renders_completed_section_header():
+async def test_renders_completed_section_header(freezegun_today):
     with (
         patch("gtasks_tui.app.list_tasks", return_value=[]),
         patch("gtasks_tui.app.list_completed_tasks", return_value=COMPLETED_TASKS),
@@ -178,7 +178,7 @@ async def test_space_completes_open_task():
 
 
 @pytest.mark.asyncio
-async def test_space_uncompletes_completed_task():
+async def test_space_uncompletes_completed_task(freezegun_today):
     with (
         patch("gtasks_tui.app.list_tasks", return_value=[]),
         patch("gtasks_tui.app.list_completed_tasks", return_value=COMPLETED_TASKS),
@@ -234,7 +234,7 @@ async def test_delete_open_task():
 
 
 @pytest.mark.asyncio
-async def test_delete_completed_task():
+async def test_delete_completed_task(freezegun_today):
     with (
         patch("gtasks_tui.app.list_tasks", return_value=[]),
         patch("gtasks_tui.app.list_completed_tasks", return_value=COMPLETED_TASKS),

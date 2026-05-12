@@ -23,6 +23,7 @@ def freezegun_today():
     with (
         patch("gtasks_tui.tasks_api.datetime") as mock_dt,
         patch("gtasks_tui.date_utils.datetime") as mock_du_dt,
+        patch("gtasks_tui.task_list.datetime") as mock_tl_dt,
     ):
         mock_dt.fromisoformat.side_effect = lambda s: __import__(
             "datetime"
@@ -33,4 +34,5 @@ def freezegun_today():
         mock_du_dt.fromisoformat.side_effect = lambda s: __import__(
             "datetime"
         ).datetime.fromisoformat(s)
+        mock_tl_dt.now.return_value.date.return_value = fixed_date
         yield

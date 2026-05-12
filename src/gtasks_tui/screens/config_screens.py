@@ -16,6 +16,11 @@ _DAYS_OPTIONS: list[tuple[str, int | None]] = [
     ("Last 90 days", 90),
 ]
 
+_SORT_OPTIONS: list[tuple[str, str]] = [
+    ("Due date", "due_date"),
+    ("Label", "label"),
+]
+
 
 class FilterScreen(ModalScreen):
     """Filter by completed-task recency and/or task list."""
@@ -30,6 +35,7 @@ class FilterScreen(ModalScreen):
         filter_days: int | None = None,
         available_lists: list[str] | None = None,
         selected_lists: set[str] | None = None,
+        sort_key: str = "due_date",
     ) -> None:
         super().__init__()
         self._filter_days = filter_days
@@ -38,6 +44,7 @@ class FilterScreen(ModalScreen):
         self._selected_lists = (
             selected_lists if selected_lists is not None else set(self._available_lists)
         )
+        self._sort_key = sort_key
 
     def compose(self) -> ComposeResult:
         with Vertical(id="filter-dialog"):
@@ -47,6 +54,12 @@ class FilterScreen(ModalScreen):
                 value=self._filter_days,
                 id="filter-days",
                 prompt="Show completed",
+            )
+            yield Label("Sort by", id="filter-sort-label")
+            yield Select(
+                [(label, val) for label, val in _SORT_OPTIONS],
+                value=self._sort_key,
+                id="sort-key",
             )
             if self._available_lists:
                 yield Label("Lists", id="filter-lists-label")
@@ -84,4 +97,9 @@ class FilterScreen(ModalScreen):
                 else selected_values
             )
 
-        self.dismiss({"days": days, "lists": selected})
+        sort_select = self.query_one("#sort-key", Select)
+        sort_key = (
+            sort_select.value if sort_select.value is not Select.BLANK else "due_date"
+        )
+
+        self.dismiss({"days": days, "lists": selected, "sort_key": sort_key})

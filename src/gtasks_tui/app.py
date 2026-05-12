@@ -53,8 +53,9 @@ class GTasksApp(App):
         super().__init__()
         self._tasks: list[Task] = []
         self._completed_tasks: list[Task] = []
-        self._filter_days: int | None = None
+        self._filter_days: int | None = 7
         self._filter_lists: set[str] | None = None
+        self._sort_key: str = "due_date"
         self._available_lists: list[str] = []
         self._load_generation: int = 0
 
@@ -107,6 +108,7 @@ class GTasksApp(App):
             self._completed_tasks,
             filter_days=self._filter_days,
             filter_lists=self._filter_lists,
+            sort_key=self._sort_key,
         )
 
     # ── Selection helpers ─────────────────────────────────────────────────────
@@ -219,6 +221,7 @@ class GTasksApp(App):
             if result is not None:
                 self._filter_days = result["days"]
                 self._filter_lists = result.get("lists")
+                self._sort_key = result.get("sort_key", "due_date")
                 self._apply_loaded_tasks(self._tasks, self._completed_tasks)
 
         self.push_screen(
@@ -226,6 +229,7 @@ class GTasksApp(App):
                 filter_days=self._filter_days,
                 available_lists=self._available_lists,
                 selected_lists=self._filter_lists,
+                sort_key=self._sort_key,
             ),
             on_result,
         )
