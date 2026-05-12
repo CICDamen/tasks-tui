@@ -1,7 +1,7 @@
 ---
 title: "feat: Add custom task sort to filter modal"
 type: feat
-status: active
+status: completed
 date: 2026-05-12
 ---
 
